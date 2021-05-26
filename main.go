@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+	"unsafe"
+)
 
 func main() {
 	fmt.Println("Hello World!")
@@ -20,6 +24,14 @@ func main() {
 	cal()
 	multipleReturn()
 	variadicFunction()
+	closures()
+	recursionFunc()
+	stackExample()
+	txtCreate()
+	pointerExample()
+	passByDifferent()
+	structExample()
+	methodStructExample()
 }
 
 func startWithType() {
@@ -253,3 +265,209 @@ func sum(numbers ...int) {
 	}
 	fmt.Println(total)
 }
+
+func intPlusPlus() func() int {
+	i := 0
+	return func() int {
+		i++
+		return i
+	}
+}
+
+//  มันจำตำแหน่งบน Memory ของฟังก์ชันไว้และจะเก็บค่า i ไว้ให้เรา แม้เราจะสั่งมันทำงานจบไปแล้วก็ตาม เมื่อเรียกใช้อีกครั้งทำให้ค่านั้นถูกอัพเดทจากค่าครั้งก่อนที่เก็บไว้
+func closures() {
+	fmt.Println("-------- Closure --------")
+	nextInt := intPlusPlus()
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	fmt.Println("----------------")
+	nextInt = intPlusPlus()
+	fmt.Println(nextInt())
+	fmt.Println("----------------")
+}
+
+// ------ Recursion ------
+func fact(n int) int {
+	if n == 0 {
+		return 1
+	}
+	// มันจะไปเรียก fact เรื่อยๆจนกว่า n จะเป็น 0
+	return n * fact(n-1)
+}
+
+func factUsingFor(n int) int {
+	factorial := 1
+	for i := 1; i <= n; i++ {
+		factorial *= i
+	}
+	return factorial
+}
+
+func recursionFunc() {
+	fmt.Println("------ Recursion ------")
+	number := 10
+	fmt.Println("Using recursion :", fact(number))
+	fmt.Println("Using for loop :", factUsingFor(number))
+	fmt.Println("------------")
+}
+
+func stackExample() {
+	//defer เป็นการซ้อนลงไปใน stack จะทำอันปกติให้เสร็จก่อนแล้วค่อยกลับมาทำใน stack
+	defer fmt.Println("Stack #1")
+	fmt.Println("------- Stack -------")
+	fmt.Println("Hello Stack")
+	defer fmt.Println("Stack #2")
+	fmt.Println("Hello Stack #2")
+	fmt.Println("--------------")
+}
+
+func txtCreate() {
+	fmt.Println("--------- Create File -----------")
+	// เอาไว้ถ้าเกิด error จะมาทำข้างใน
+	/* ทฤษฎีอ่านจาก https://medium.com/grean-developers-family/day-5-7-วัน-ฉันจะเขียน-golang-ให้ได้-2830703b1a48 */
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("System Cannot find path specific")
+			fmt.Println("--------------------")
+		}
+	}()
+
+	path := "/Users/arts/test.txt" //กำหนด path ที่เราจะทำการ create
+	_, err := os.Stat(path)        //ให้มีค่าว่างกับ err โดยใช้ os.Stat เป็นการเช็คว่า path นั้นมีอยู่จริงมั้ยถ้าไม่มีให้เกิด Error Path Error
+	if os.IsNotExist(err) {        //เช็คว่าเกิด error มั้ย
+		file, err := os.Create(path) // ให้สร้างไฟลืขึ้นมา
+		if err != nil {              //ถ้า error != null ให้ทำข้างใน (ถ้า err เป็น null ก็คือไม่มี error)
+			panic(err) //โยน error เพื่อให้โปรแกรมหยุดทำงาน
+		}
+		defer file.Close() //ถ้าทำงานใน method นี้เสร็จแล้วให้ file.close ด้วย
+	}
+	fmt.Println("Done Creating file", path)
+}
+
+func pointerExample() {
+	fmt.Println("--------- Pointer ----------")
+
+	i := 5
+	fmt.Println(i)
+	// & เอาไว้ดู address(ตำแหน่ง) ในตัวแปรนั้นๆ
+	fmt.Println("Memory ", &i)
+
+	i = 10
+	fmt.Println(i)
+	fmt.Println("Memory ", &i)
+	// ที่ทั้ง 2 ตัวเท่ากันก็เพราะว่าเป็นตัวแปรเดียวกันแค่เปลี่ยนค่า
+
+	fmt.Println("------------------------")
+	fmt.Println("Value of i :", i)
+	fmt.Println("Address of i :", &i)
+	fmt.Println("------------------------")
+
+	p := &i                           //เอาตัวแปร p มาเก็บ address ของ i
+	fmt.Println("Value of p :", p)    //แสดง ค่าของ p ก็คือ address ของ i
+	fmt.Println("Address of p :", &p) // แสดง address ของ p
+	fmt.Println("Value of *p :", *p)  //แสดงค่าทืี่ตำแหน่ง p ขี้อยู่ นั่นก็คือค่าของ i
+	// * คือค่าของ address นั้น ส่วน & คือแสดง address ของตัวแปร เราสามารถทำ *&i ก็จะได้ค่าของ i ได้
+	fmt.Println("------------------------")
+
+	*p = 10 //เปลี่ยนค่าที่ตำแหน่ง p ชี้ไปหา
+	fmt.Println("Value of p :", *p)
+	fmt.Println("Value of i :", i)
+	fmt.Println("Size of p :", unsafe.Sizeof(p), "bytes.")
+	fmt.Println("Size of i :", unsafe.Sizeof(i), "bytes.")
+	fmt.Println("------------------------")
+
+}
+
+// Pass By Different
+
+func setZeroPassByValue(i int) {
+	i = 0
+	fmt.Println("Set Zero Pass by value :", i)
+}
+
+func setZeroPassByReference(i *int) { //รับค่าของ address เข้ามา
+	*i = 0 //นำค่าของ address ของตัวแปรที่รับเข้ามาให้ = 0
+	fmt.Println("Set Zero Pass by Reference :", *i)
+}
+
+func passByDifferent() {
+	i := 5
+	fmt.Println("Value of i :", i)
+	setZeroPassByValue(i)
+	fmt.Println("Value of i after setZeroPassByValue :", i)
+
+	fmt.Println("----------------------------------")
+
+	fmt.Println("Value of i :", i)
+	setZeroPassByReference(&i)                                  //เราใส่ address ที่ชี้ไปยังตัวแปร i
+	fmt.Println("Value of i after setZeroPassByReference :", i) //จะเห็นได้ว่า i หลักเราก็กลายเป็น 0 แล้ว
+	fmt.Println("============================================")
+}
+
+// Structure
+type developers struct {
+	fname   string
+	lname   string
+	skills  []string
+	exp     int
+	salary  int
+	company string
+}
+
+func structExample() {
+	fmt.Println()
+	fmt.Println("--------- Struct ----------")
+	fmt.Println("Before assign :", developers{})
+
+	dev := developers{
+		fname:  "Taninchot",
+		lname:  "Phuwaloertthiwat",
+		skills: []string{"Node js", "Vue", "Css", "Java", "C"},
+		exp:    0,
+	}
+	dev.salary = 15000
+	fmt.Println(dev)
+	fmt.Println("---------------------------")
+
+	devp := &dev //เราชี้ที่ address เพราะอยากให้ dev เปลี่ยน
+	fmt.Println(devp.company)
+	devp.company = "ArtZuZu Company"
+	fmt.Println("Value of devP :", devp)
+	fmt.Println("Value of dev :", dev)
+	fmt.Println("===========================")
+}
+
+// Method struct Example
+
+type rect struct {
+	width, height int
+}
+
+// method struct ต้องบอกว่ารับ struct ของตัวไหน จะเป็น pointer หรือ value ก็ได้ แล้วแต่ว่าเราจะออกแบบยังไง
+func (r rect) area() int {
+	return r.height * r.width
+}
+
+func (r rect) perim() int {
+	return 2*r.height + 2*r.width
+}
+
+func methodStructExample() {
+	fmt.Println()
+	r := rect{
+		width:  10,
+		height: 23,
+	}
+	fmt.Println("Area of r :", r.area())
+	fmt.Println("Perim of r :", r.perim())
+	fmt.Println("---------------------------")
+
+	rp := &r
+	fmt.Println("Area of rp :", rp.area())
+	fmt.Println("Perim of rp :", rp.perim())
+	fmt.Println("===========================")
+	fmt.Println()
+}
+
+// Interface Example
