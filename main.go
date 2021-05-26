@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"unsafe"
 )
@@ -32,6 +33,7 @@ func main() {
 	passByDifferent()
 	structExample()
 	methodStructExample()
+  interfaceExample()
 }
 
 func startWithType() {
@@ -471,3 +473,42 @@ func methodStructExample() {
 }
 
 // Interface Example
+type geometry interface {
+	area() float64
+	perim() float64
+}
+
+type rectGeo struct {
+	width, height float64
+}
+type circle struct {
+	radius float64
+}
+
+func (r rectGeo) area() float64 {
+	return r.height * r.width
+}
+func (r rectGeo) perim() float64 {
+	return 2*r.height + 2*r.width
+}
+func (r circle) area() float64 {
+	return math.Pi * math.Pow(r.radius, 2)
+}
+func (r circle) perim() float64 {
+	return 2 * math.Pi * r.radius
+}
+
+func measure(g geometry) {
+	fmt.Println(g)
+	fmt.Println("Area :", g.area())
+	fmt.Println("Perim :", g.perim())
+}
+
+func interfaceExample() {
+	r := rectGeo{width: 10, height: 24}
+	c := circle{radius: 5}
+
+  measure(r)
+  fmt.Println("-----------------")
+  measure(c)
+}
