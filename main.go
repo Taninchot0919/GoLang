@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"os"
+	"time"
 	"unsafe"
 )
 
@@ -34,6 +36,9 @@ func main() {
 	structExample()
 	methodStructExample()
 	interfaceExample()
+	errorExample()
+	goRoutinesExample()
+	channelsExample()
 }
 
 func startWithType() {
@@ -507,8 +512,101 @@ func measure(g geometry) {
 func interfaceExample() {
 	r := rectGeo{width: 10, height: 24}
 	c := circle{radius: 5}
-	
+
 	measure(r)
 	fmt.Println("-----------------")
 	measure(c)
+	fmt.Println("====================================")
+	fmt.Println()
+}
+
+// Function Error Example
+func divide(x, y int) (int, error) {
+	if y <= 0 {
+		return 0, errors.New("Can't divide with 0 or less than 0")
+	}
+	return x / y, nil
+}
+
+func errorExample() {
+	// First is import error
+	fmt.Println("--------- Error Example -----------")
+	fmt.Println(divide(10, 2))
+	fmt.Println(divide(20, -2))
+	fmt.Println(divide(20, 2))
+	fmt.Println("====================================")
+	fmt.Println()
+}
+
+// This is Goroutines เหมือนกับเขียนโปรแกรมให้ทำงานแบบ multi threads
+
+func finder1(mine [5]string) {
+	for _, ore := range mine {
+		if ore == "ore" {
+			fmt.Println("Finder 1 Find ore")
+		}
+	}
+}
+
+func finder2(mine [5]string) {
+	for _, ore := range mine {
+		if ore == "ore" {
+			fmt.Println("Finder 2 Find ore")
+		}
+	}
+}
+
+func goRoutinesExample() {
+	fmt.Println("-------- Go Routines Example --------")
+	mines := [5]string{"rock", "ore", "ore", "rock", "ore"}
+	// เพียงแค่ใส่ go หน้า func ที่จะรันก็ทำให้รันได้แล้ว ว้าวซ่าอิอิอิอิ
+	go finder1(mines)
+	go finder2(mines)
+	<-time.After(time.Second * 5)
+	fmt.Println()
+}
+
+// เนื่องจากถ้าทำ Go routine แบบด้านบน เราจะมีแร่แค่ 3 ก้อนแต่ว่า finder1 และ finder 2 ไม่คุยกัน ทำให้ผลลัพธ์เหมือนเจอแร่ทั้งหมด 6 ก้อน
+// ดังนั้นเราต้องสร้าง 	ช่องทางการสื่อสารขึ้นมา นั่นก็คือ Channels
+
+// This is Channels เอาไว้เหมือนให้ thread สื่อสารกัน
+// การสร้าง Channels ทำได้โดย myFirstChannels := make(chan string)
+
+func channelsExample() {
+	// ทำให้แต่ละ Go routines เมื่อทำงานเสร็จจะส่งต่อไปยัง channel ที่ตัวเองมี
+	// A เจอแร่ก็ส่งข้อความไปบอกผ่านทาง oreChannel
+	// B รับข้อความมาจาก oreChannel ว่าไอ้ A เนี่ยเจอ ก็เลยทำการขุดแร่ แล้วส่งต่อไปใหยัง minedOreChannel
+	// C รับข้อความมาจาก minedOreChannle ว่า B ขุดแร่มาให้ก็เลยทำการ ถลุงซะเล้ย
+	mines := [5]string{"rock", "ore", "ore", "rock", "ore"}
+	oreChannel := make(chan string)
+	minedOreChanel := make(chan string)
+
+	// Finder ไอ้ A
+	go func(mine [5]string) {
+		for _, ore := range mine {
+			if ore == "ore" { // หมายถึงถ้าเจอแร่แล้ว
+				oreChannel <- ore // ส่ง ore ไปให้ oreChannel
+			}
+		}
+	}(mines)
+
+	// Ore Breaker ไอ้ B
+	go func() {
+		for i := 0; i < 3; i++ {
+			foundOre := <-oreChannel // อ่านจาก channel OreChannel จะได้ "ore"
+			fmt.Println("From Finder: ", foundOre)
+			fmt.Println("Mining Ore...") // แสร้งทำเป็นว่าขุดแร่
+			minedOreChanel <- "minedOre" // ส่งข้อความว่า mined ore ไปให้ minedOreChannel
+		}
+	}()
+
+	// Smelter ไอ้ C
+	go func() {
+		for i := 0; i < 3; i++ {
+			minedOre := <-minedOreChanel                // รับข้อความมาจาก minedOreChannel จะได้ "minedOre"
+			fmt.Println("From Miner: ", minedOre)       // อันนี้ก็ปริ้นเฉยๆ
+			fmt.Println(`Smelter said "Ore is smeled"`) // แสร้างว่าถลุงแร่
+		}
+	}()
+	<-time.After(time.Second * 5)
 }
