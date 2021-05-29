@@ -33,7 +33,7 @@ func main() {
 	passByDifferent()
 	structExample()
 	methodStructExample()
-  interfaceExample()
+	interfaceExample()
 }
 
 func startWithType() {
@@ -507,8 +507,8 @@ func measure(g geometry) {
 func interfaceExample() {
 	r := rectGeo{width: 10, height: 24}
 	c := circle{radius: 5}
-
-  measure(r)
-  fmt.Println("-----------------")
-  measure(c)
+	
+	measure(r)
+	fmt.Println("-----------------")
+	measure(c)
 }
